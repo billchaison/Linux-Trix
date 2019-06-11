@@ -45,5 +45,5 @@ int main() {
 **Start netcat on (A) to receive /etc/shadow from (C)**<br />
 ```nc -nlvp 4444```
 
-**Execute `ptshijack` on (B) to send /etc/shadow from (C) to (A)**<br />
+**Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
 break (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
