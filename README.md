@@ -72,4 +72,4 @@ int main(int argc, char **argv)
 }
 ```
 setuid as root `chown root:root setuid-shell` then `chmod u+s setuid-shell`<br />
-Now execute `setuid-shell` and see that you are root by using the `id` command.
+Now execute `setuid-shell` and see that you are root by issuing the `id` command.
