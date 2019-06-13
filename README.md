@@ -151,7 +151,7 @@ This example will attack snmpwalk to get the community string.<br>
 `ps -ef | grep snmpwalk`
 You will notice that the community string has been scrubbed from the argument list.
 
-**Use the PID to view ** `proc` ** filesystem data**<br />
+**Use the PID to view** `proc` **filesystem data**<br />
 `cat /proc/<PID>/environ` (This is just standard procedure, you may find some good stuff here)<br />
 `cat /proc/<PID>/cmdline` (This is just standard procedure, you may find some good stuff here)<br />
 Get the `[stack]` and `[heap]` memory ranges.<br />
