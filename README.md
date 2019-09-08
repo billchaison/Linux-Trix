@@ -97,9 +97,10 @@ Example of listing capabilities `getcap /usr/sbin/tcpdump`
 **(ACLs)**<br />
 * As root, `setfacl -m u:myuser:rw /etc/shadow`<br />
 * Execute `getfacl /etc/shadow` will show `user:myuser:rw-` and `ls -l /etc/shadow` will show `-rw-rw----+`<br />
-* As the user, execute `cat /etc/shadow` to see the contents of the file.<br />
-* To remove a specific ACL, execute `setfacl -x u:myuser /etc/shadow`<br />
-* To remove all ACLs, execute `setfacl -b /etc/shadow`
+* As the user, execute `cat /etc/shadow` to see the contents of the file.
+
+To remove a specific ACL, execute `setfacl -x u:myuser /etc/shadow`<br />
+To remove all ACLs, execute `setfacl -b /etc/shadow`
 
 ## >> Changing the process name in ps
 
