@@ -84,8 +84,10 @@ Now execute `.setuid-shell` and see that you are root by issuing the `id` comman
 **(capabilities)**<br />
 * Compile the C program above as an ordinary user.<br />
 * As root, `setcap cap_setuid=eip /home/myuser/setuid-shell`<br />
-* As the user, execute `setuid-shell` then `id` to see that you are root.<br />
-Allow non-root user to execute `tcpdump` so insecure protocols can be captured.<br>
+* As the user, execute `setuid-shell` then `id` to see that you are root.
+
+Allow non-root user to execute `tcpdump` so insecure protocols can be captured.
+
 * As root, `setcap cap_net_raw=eip /usr/sbin/tcpdump`<br />
 * As the user, execute `tcpdump -nn -vv -X -i eth0 port 23`<br />
 Example of removing capabilities `setcap -r /usr/sbin/tcpdump`<br />
