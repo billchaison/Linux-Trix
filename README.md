@@ -89,7 +89,8 @@ Now execute `.setuid-shell` and see that you are root by issuing the `id` comman
 Allow non-root user to execute `tcpdump` so insecure protocols can be captured.
 
 * As root, `setcap cap_net_raw=eip /usr/sbin/tcpdump`<br />
-* As the user, execute `tcpdump -nn -vv -X -i eth0 port 23`<br />
+* As the user, execute `tcpdump -nn -vv -X -i eth0 port 23`
+
 Example of removing capabilities `setcap -r /usr/sbin/tcpdump`<br />
 Example of listing capabilities `getcap /usr/sbin/tcpdump`
 
