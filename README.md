@@ -278,8 +278,8 @@ Launch the tftp server.<br />
 
 On the receiving host (server).<br />
 `openssl req -x509 -newkey rsa:2048 -keyout svrkey.pem -out svrcert.pem -days 365 -nodes`<br />
-`openssl s_server -quiet -cipher HIGH -key svrkey.pem -cert svrcert.pem -accept 443 -naccept 1 > some.file`
+`openssl s_server -quiet -tls1_2 -cipher HIGH -key svrkey.pem -cert svrcert.pem -accept 443 -naccept 1 > some.file`
 
 On the sending host (client).<br />
-`cat some.file | timeout 10 openssl s_client -quiet -cipher HIGH -connect <server ip>:443`
+`cat some.file | timeout 10 openssl s_client -quiet -tls1_2 -cipher HIGH -connect <server ip>:443`
 
