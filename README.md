@@ -273,3 +273,13 @@ Mark the file as executable.<br />
 
 Launch the tftp server.<br />
 `/tmp/busybox udpsvd -vE 0.0.0.0 69 /tmp/busybox tftpd -c -u ubnt /tmp`
+
+## >> File transfer over TLS using openssl
+
+On the receiving host (server).<br />
+`openssl req -x509 -newkey rsa:2048 -keyout svrkey.pem -out svrcert.pem -days 365 -nodes`<br />
+`openssl s_server -quiet -cipher HIGH -key svrkey.pem -cert svrcert.pem -accept 443 -naccept 1 > some.file`
+
+On the sending host (client).<br />
+`cat some.file | timeout 10 openssl s_client -quiet -cipher HIGH -connect <server ip>:443`
+
