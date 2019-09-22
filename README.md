@@ -276,10 +276,19 @@ Launch the tftp server.<br />
 
 ## >> File transfer over TLS using openssl
 
+Create a server key and certificate.<br />
+`openssl req -x509 -newkey rsa:2048 -keyout svrkey.pem -out svrcert.pem -days 365 -nodes`
+
+**Uploading a file from the client to the server**<br />
 On the receiving host (server).<br />
-`openssl req -x509 -newkey rsa:2048 -keyout svrkey.pem -out svrcert.pem -days 365 -nodes`<br />
 `openssl s_server -quiet -tls1_2 -cipher HIGH -key svrkey.pem -cert svrcert.pem -accept 443 -naccept 1 > some.file`
 
 On the sending host (client).<br />
 `cat some.file | timeout 10 openssl s_client -quiet -tls1_2 -cipher HIGH -connect <server ip>:443`
 
+**Downloading a file from the server to the client**<br />
+On the sending host (server).<br />
+`openssl s_server -quiet -tls1_2 -cipher HIGH -key svrkey.pem -cert svrcert.pem -accept 443 -naccept 1 < some.file`
+
+On the receiving host (client).<br />
+`openssl s_client -quiet -tls1_2 -cipher HIGH -connect <server ip>:443 > some.file`
