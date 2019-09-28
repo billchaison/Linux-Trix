@@ -295,7 +295,7 @@ On the receiving host (client).<br />
 
 ## >> Crafting SNMP packets
 
-This technique allows you to perform SNMP functions (e.g. snmpget) without SNMP utilities installed.  This example will show how to duplicate the following equivalent snmpget command.
+This technique allows you to perform SNMP functions (e.g. snmpget and snmpset) without SNMP utilities installed.  This example will show how to duplicate the following equivalent snmpget command.
 
 `snmpget -r 1 -v 2c -c public 10.1.2.3 .1.3.6.1.2.1.1.1.0`
 
