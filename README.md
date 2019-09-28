@@ -292,3 +292,88 @@ On the sending host (server).<br />
 
 On the receiving host (client).<br />
 `openssl s_client -quiet -tls1_2 -cipher HIGH -connect <server ip>:443 > some.file`
+
+## >> Crafting SNMP packets
+
+This technique allows you to perform SNMP functions (e.g. snmpget) without SNMP utilities installed.  This example will show how to duplicate the following equivalent snmpget command.
+
+`snmpget -r 1 -v 2c -c public 10.1.2.3 .1.3.6.1.2.1.1.1.0`
+
+In this example the target 10.1.2.3 is a cisco UC500 phone server and returns the following response to the query.
+
+```
+iso.3.6.1.2.1.1.1.0 = STRING: "Cisco IOS Software, UC500 Software (UC500-ADVIPSERVICESK9-M), Version 15.1(4)M4b, CIBU Special
+Small Business Support: http://www.cisco.com/go/smallbizhelp
+Copyright (c) 1986-2012 by Cisco Systems, Inc.
+Compiled Fri 18-May-12 15:06 by CIBU"
+```
+
+**Generate the SNMP payload**
+
+First, open a shell and start netcat to receive UDP in order to generate the payload.  You will have 10 seconds to start another shell and send the query that will be captured.
+
+`echo -n '\x'; nc -l -u -p 161 < <(sleep 10; echo) | stdbuf -i0 xxd -p -c 256 | sed 's/.\{2\}/&\\x/g' | sed 's/..$//'`
+
+In a second shell send the query locally.
+
+`snmpget -r 1 -v 2c -c public 127.0.0.1 .1.3.6.1.2.1.1.1.0`
+
+In the first shell you should see the escaped payload.
+
+`\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00`
+
+**Send the SNMP query through netcat and get a response**
+
+`echo -ne '\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00' | nc -u 10.1.2.3 161 -w 2 | hexdump -Cv`
+
+The response would look like this:
+
+```
+00000000  30 82 01 21 02 01 01 04  06 70 75 62 6c 69 63 a2  |0..!.....public.|
+00000010  82 01 12 02 04 3a 06 51  38 02 01 00 02 01 00 30  |.....:.Q8......0|
+00000020  82 01 02 30 81 ff 06 08  2b 06 01 02 01 01 01 00  |...0....+.......|
+00000030  04 81 f2 43 69 73 63 6f  20 49 4f 53 20 53 6f 66  |...Cisco IOS Sof|
+00000040  74 77 61 72 65 2c 20 55  43 35 30 30 20 53 6f 66  |tware, UC500 Sof|
+00000050  74 77 61 72 65 20 28 55  43 35 30 30 2d 41 44 56  |tware (UC500-ADV|
+00000060  49 50 53 45 52 56 49 43  45 53 4b 39 2d 4d 29 2c  |IPSERVICESK9-M),|
+00000070  20 56 65 72 73 69 6f 6e  20 31 35 2e 31 28 34 29  | Version 15.1(4)|
+00000080  4d 34 62 2c 20 43 49 42  55 20 53 70 65 63 69 61  |M4b, CIBU Specia|
+00000090  6c 0d 0a 53 6d 61 6c 6c  20 42 75 73 69 6e 65 73  |l..Small Busines|
+000000a0  73 20 53 75 70 70 6f 72  74 3a 20 68 74 74 70 3a  |s Support: http:|
+000000b0  2f 2f 77 77 77 2e 63 69  73 63 6f 2e 63 6f 6d 2f  |//www.cisco.com/|
+000000c0  67 6f 2f 73 6d 61 6c 6c  62 69 7a 68 65 6c 70 0d  |go/smallbizhelp.|
+000000d0  0a 43 6f 70 79 72 69 67  68 74 20 28 63 29 20 31  |.Copyright (c) 1|
+000000e0  39 38 36 2d 32 30 31 32  20 62 79 20 43 69 73 63  |986-2012 by Cisc|
+000000f0  6f 20 53 79 73 74 65 6d  73 2c 20 49 6e 63 2e 0d  |o Systems, Inc..|
+00000100  0a 43 6f 6d 70 69 6c 65  64 20 46 72 69 20 31 38  |.Compiled Fri 18|
+00000110  2d 4d 61 79 2d 31 32 20  31 35 3a 30 36 20 62 79  |-May-12 15:06 by|
+00000120  20 43 49 42 55                                    | CIBU|
+```
+
+**Send the SNMP query through bash UDP device and get a response**
+
+`exec 5<>/dev/udp/10.1.2.3/161; echo -ne '\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00\x30\x29\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63\xa0\x1c\x02\x04\x3a\x06\x51\x38\x02\x01\x00\x02\x01\x00\x30\x0e\x30\x0c\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00\x05\x00' >&5; dd bs=4K count=1 <&5 2>/dev/null | hexdump -Cv`
+
+The response would look like this:
+
+```
+00000000  30 82 01 21 02 01 01 04  06 70 75 62 6c 69 63 a2  |0..!.....public.|
+00000010  82 01 12 02 04 3a 06 51  38 02 01 00 02 01 00 30  |.....:.Q8......0|
+00000020  82 01 02 30 81 ff 06 08  2b 06 01 02 01 01 01 00  |...0....+.......|
+00000030  04 81 f2 43 69 73 63 6f  20 49 4f 53 20 53 6f 66  |...Cisco IOS Sof|
+00000040  74 77 61 72 65 2c 20 55  43 35 30 30 20 53 6f 66  |tware, UC500 Sof|
+00000050  74 77 61 72 65 20 28 55  43 35 30 30 2d 41 44 56  |tware (UC500-ADV|
+00000060  49 50 53 45 52 56 49 43  45 53 4b 39 2d 4d 29 2c  |IPSERVICESK9-M),|
+00000070  20 56 65 72 73 69 6f 6e  20 31 35 2e 31 28 34 29  | Version 15.1(4)|
+00000080  4d 34 62 2c 20 43 49 42  55 20 53 70 65 63 69 61  |M4b, CIBU Specia|
+00000090  6c 0d 0a 53 6d 61 6c 6c  20 42 75 73 69 6e 65 73  |l..Small Busines|
+000000a0  73 20 53 75 70 70 6f 72  74 3a 20 68 74 74 70 3a  |s Support: http:|
+000000b0  2f 2f 77 77 77 2e 63 69  73 63 6f 2e 63 6f 6d 2f  |//www.cisco.com/|
+000000c0  67 6f 2f 73 6d 61 6c 6c  62 69 7a 68 65 6c 70 0d  |go/smallbizhelp.|
+000000d0  0a 43 6f 70 79 72 69 67  68 74 20 28 63 29 20 31  |.Copyright (c) 1|
+000000e0  39 38 36 2d 32 30 31 32  20 62 79 20 43 69 73 63  |986-2012 by Cisc|
+000000f0  6f 20 53 79 73 74 65 6d  73 2c 20 49 6e 63 2e 0d  |o Systems, Inc..|
+00000100  0a 43 6f 6d 70 69 6c 65  64 20 46 72 69 20 31 38  |.Compiled Fri 18|
+00000110  2d 4d 61 79 2d 31 32 20  31 35 3a 30 36 20 62 79  |-May-12 15:06 by|
+00000120  20 43 49 42 55                                    | CIBU|
+```
