@@ -52,7 +52,7 @@ int main()
 **Execute** `ptshijack` **on (B) to send** `/etc/shadow` **from (C) to (A)**<br />
 SIGINT (ctrl-c) netcat on (A) to terminate the background process on (C)<br />
 
-## >> Persistence with setuid, capabilities and ACLs
+## >> Persistence with setuid, capabilities, ACLs and chattr
 
 Once you have root on a system leave these behind to exploit later:
 
@@ -101,6 +101,18 @@ Example of listing capabilities `getcap /usr/sbin/tcpdump`
 
 To remove a specific ACL, execute `setfacl -x u:myuser /etc/shadow`<br />
 To remove all ACLs, execute `setfacl -b /etc/shadow`
+
+**(chattr)**<br />
+Prevent file deletion (make file immutable).  Must perform the following as root.<br />
+* `touch /root/.malware.bin`<br />
+* `chattr +i /root/.malware.bin`<br />
+* `rm /root/.malware.bin`<br />
+* The result will say something like this: `Operation not permitted`<br />
+* Note that the 'i' attribute is set: `lsattr /root/.malware.bin`<br />
+* Output will look something like this: `----i---------e----- /root/.malware.bin`<br />
+* Clear the 'i' attribute `chattr -i /root/.malware.bin`<br />
+* Note that the 'i' attribute is removed: `lsattr /root/.malware.bin`<br />
+* You can now delete the file: `rm /root/.malware.bin`
 
 ## >> Changing the process name in ps
 
