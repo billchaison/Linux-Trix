@@ -392,7 +392,7 @@ The response would look like this:
 
 ## >> Brute-forcing OpenSSH private keys in bash
 
-Uses ssh-keygen in multiple background processes to attempt password guesses from a wordlist.  It's not fast, but since there are limited attack tools for this problem it's better than nothing.
+Uses ssh-keygen in multiple background processes to attempt password guesses from a wordlist.  It's not fast, especially for bcrypt kdf, but since there are limited attack tools for this problem it's better than nothing.
 
 Example script `ssh-keybrute.sh`<br />
 ```bash
@@ -400,6 +400,12 @@ Example script `ssh-keybrute.sh`<br />
 
 KEYFILE="/home/user/some_ssh_private_key"
 WORDLIST="/home/user/my_wordlist"
+
+if [ ! -f $KEYFILE ]; then
+   echo "Key file not found."
+   exit 1
+fi
+
 chmod 600 $KEYFILE
 
 NUMTEST=10
@@ -425,4 +431,8 @@ echo -e "Each hash mark '#' represents $NUMTEST password attempts.\n"
       echo -n "($COUNTER so far)"
    fi
 done) <<< $(cat $WORDLIST)
+
+sleep 2
+echo -e "\n"
+exit 0
 ```
