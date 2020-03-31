@@ -407,6 +407,7 @@ if [ ! -f $KEYFILE ]; then
 fi
 
 chmod 600 $KEYFILE
+chown $USER:$USER $KEYFILE
 
 NUMTEST=10
 COUNTER=0
