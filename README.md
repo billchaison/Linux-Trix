@@ -576,3 +576,90 @@ while (1) {
 }
 ```
 
+## >> Parsing Samba TDB password hashes using Perl
+
+Similar to using `tdbdump` to view hashes in passdb.tdb (tdbsam) files but cleaner output.
+
+```perl
+#!/usr/bin/perl
+# ver 1.0
+
+$na = $#ARGV + 1;
+if($na != 1)
+{
+   print "Usage: parsetdb.pl <file.tdb>\n";
+   print "Extracts user names and NTLM hashes from passdb.tdb (tdbsam) file.\n";
+   exit;
+}
+
+$fn = $ARGV[0];
+$fs = (stat $fn)[7];
+if($fs > 1000000)
+{
+   print "TDB file too big.\n";
+   exit;
+}
+
+open($fh, '<', $fn) or die $!;
+binmode $fh;
+read $fh, $bf, $fs;
+close($fh);
+
+if($bf !~ /^TDB file/)
+{
+   print "Not a TDB file.\n";
+   exit;
+}
+
+while(($us = index($bf, "USER_")) > 0)
+{
+   $us += 5;
+   $bf =~ s/^.{$us}//s;
+   $un = unpack('Z*', $bf);
+   print $un . "\n";
+   $se = index($bf, "\x00\x00\x00\x00\xff\xff\xff\x7f\xff\xff\xff\x7f\x00\x00\x00\x00");
+   if($se > 0)
+   {
+      $se += 16;
+      $bf =~ s/^.{$se}//s;
+      $se = index($bf, "\xff\xff\xff\x7f");
+      if($se > 0)
+      {
+         $se += 4;
+         $bf =~ s/^.{$se}//s;
+         $se = index($bf, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00");
+         if($se > 0)
+         {
+            $se += 16;
+            $bf =~ s/^.{$se}//s;
+            $se = index($bf, "\x10\x00\x00\x00");
+            if($se > 0)
+            {
+               $se += 4;
+               $bf =~ s/^.{$se}//s;
+               $se = index($bf, "\x00\x00\x00\x00");
+               if($se > 0)
+               {
+                  if($se == 16)
+                  {
+                     print unpack("H32", $bf) . "\n\n";
+                  }
+                  elsif($se == 36)
+                  {
+                     $lm = substr($bf, 0, 16);
+                     $nt = substr($bf, 20, 16);
+                     print unpack("H32", $lm) . ":" . unpack("H32", $nt) . "\n\n";
+                  }
+                  else
+                  {
+                     print "<error>\n\n";
+                  }
+                  $se += 4;
+                  $bf =~ s/^.{$se}//s;
+               }
+            }
+         }
+      }
+   }
+}
+```
