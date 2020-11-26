@@ -582,7 +582,7 @@ Similar to using `tdbdump` to view hashes in passdb.tdb (tdbsam) files but clean
 
 ```perl
 #!/usr/bin/perl
-# ver 1.0
+# ver 1.1
 
 $na = $#ARGV + 1;
 if($na != 1)
@@ -617,49 +617,62 @@ while(($us = index($bf, "USER_")) > 0)
    $bf =~ s/^.{$us}//s;
    $un = unpack('Z*', $bf);
    print $un . "\n";
-   $se = index($bf, "\x00\x00\x00\x00\xff\xff\xff\x7f\xff\xff\xff\x7f\x00\x00\x00\x00");
+   if($bf =~ /\x00\x00\x00\x00........\x00\x00\x00\x00/)
+   {
+      $se = 1;
+   }
+   else
+   {
+      $se = 0;
+   }
    if($se > 0)
    {
       $se += 16;
       $bf =~ s/^.{$se}//s;
-      $se = index($bf, "\xff\xff\xff\x7f");
+      $se = index($bf, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00");
       if($se > 0)
       {
-         $se += 4;
+         $se += 16;
          $bf =~ s/^.{$se}//s;
-         $se = index($bf, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00");
+         $se = index($bf, "\x10\x00\x00\x00");
          if($se > 0)
          {
-            $se += 16;
+            $se += 4;
             $bf =~ s/^.{$se}//s;
-            $se = index($bf, "\x10\x00\x00\x00");
+            $se = index($bf, "\x00\x00\x00\x00");
             if($se > 0)
             {
+               if($se == 16)
+               {
+                  print unpack("H32", $bf) . "\n\n";
+               }
+               elsif($se == 36)
+               {
+                  $lm = substr($bf, 0, 16);
+                  $nt = substr($bf, 20, 16);
+                  print unpack("H32", $lm) . ":" . unpack("H32", $nt) . "\n\n";
+               }
+               else
+               {
+                  print "<error>\n\n";
+               }
                $se += 4;
                $bf =~ s/^.{$se}//s;
-               $se = index($bf, "\x00\x00\x00\x00");
-               if($se > 0)
-               {
-                  if($se == 16)
-                  {
-                     print unpack("H32", $bf) . "\n\n";
-                  }
-                  elsif($se == 36)
-                  {
-                     $lm = substr($bf, 0, 16);
-                     $nt = substr($bf, 20, 16);
-                     print unpack("H32", $lm) . ":" . unpack("H32", $nt) . "\n\n";
-                  }
-                  else
-                  {
-                     print "<error>\n\n";
-                  }
-                  $se += 4;
-                  $bf =~ s/^.{$se}//s;
-               }
             }
          }
+         else
+         {
+            print "<error>\n\n";
+         }
       }
+      else
+      {
+         print "<error>\n\n";
+      }
+   }
+   else
+   {
+      print "<error>\n\n";
    }
 }
 ```
