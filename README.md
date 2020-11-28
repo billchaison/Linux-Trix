@@ -582,7 +582,7 @@ Similar to using `tdbdump` to view hashes in passdb.tdb (tdbsam) files but clean
 
 ```perl
 #!/usr/bin/perl
-# ver 1.1
+# ver 1.2
 
 $na = $#ARGV + 1;
 if($na != 1)
@@ -654,7 +654,7 @@ while(($us = index($bf, "USER_")) > 0)
                }
                else
                {
-                  print "<error>\n\n";
+                  print "<error 4> try \"tdbdump $fn\"\n\n";
                }
                $se += 4;
                $bf =~ s/^.{$se}//s;
@@ -662,17 +662,17 @@ while(($us = index($bf, "USER_")) > 0)
          }
          else
          {
-            print "<error>\n\n";
+            print "<error 3> try \"tdbdump $fn\"\n\n";
          }
       }
       else
       {
-         print "<error>\n\n";
+         print "<error 2> try \"tdbdump $fn\"\n\n";
       }
    }
    else
    {
-      print "<error>\n\n";
+      print "<error 1> try \"tdbdump $fn\"\n\n";
    }
 }
 ```
