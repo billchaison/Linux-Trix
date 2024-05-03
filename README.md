@@ -738,15 +738,15 @@ How to replace the PAM authentication module with your own shared object to send
 
 **First identify the current auth shared object and its location**
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam00.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam00.png)
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam01.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam01.png)
 
 In this example the module name is `pam_unix.so`.  Now find the path to the library and get the export functions.
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam02.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam02.png)
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam03.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam03.png)
 
 Create a source file called `pam_getcreds.c` as follows.  It will be compiled into `pam_getcreds.so` like this.
 
@@ -900,12 +900,12 @@ PAM_EXTERN int pam_open_session(pam_handle_t *pamh, int flags)
 
 Copy the PAM wrapper to the folder where `pam_unix.so` resides.
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam04.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam04.png)
 
 Edit `/etc/pam.d/common-auth` and comment out the original line and insert your own module `pam_getcreds.so`.
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam05.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam05.png)
 
 Start the UDP receiver on the logging server and wait for credentials to come in.
 
-![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam06.png)
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam06.png)
