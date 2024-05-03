@@ -736,7 +736,7 @@ List the members of "domain admins".
 
 How to replace the PAM authentication module with your own shared object to send usernames and passwords to a UDP log server.
 
-**First identify the current auth shared object and its location**
+First identify the current auth shared object and its location.
 
 ![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam00.png)
 
