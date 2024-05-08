@@ -842,7 +842,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, con
    if(!hlib)
    {
       hlib = dlopen(PAM_UNIX, RTLD_LAZY);
-      if(!hlib) return PAM_AUTH_ERR;
+      if(!hlib) return PAM_SESSION_ERR;
    }
    if(!func_3)
    {
@@ -857,7 +857,7 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
    if(!hlib)
    {
       hlib = dlopen(PAM_UNIX, RTLD_LAZY);
-      if(!hlib) return PAM_AUTH_ERR;
+      if(!hlib) return PAM_CRED_ERR;
    }
    if(!func_4)
    {
@@ -872,7 +872,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
    if(!hlib)
    {
       hlib = dlopen(PAM_UNIX, RTLD_LAZY);
-      if(!hlib) return PAM_AUTH_ERR;
+      if(!hlib) return PAM_AUTHTOK_ERR;
    }
    if(!func_5)
    {
@@ -892,7 +892,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
    if(!func_6)
    {
       *(int**)(&func_6) = dlsym(hlib, "pam_sm_open_session");
-      if(!func_6) return PAM_AUTH_ERR;
+      if(!func_6) return PAM_SESSION_ERR;
    }
    return func_6(pamh, flags, argc, argv);
 }
