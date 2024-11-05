@@ -995,7 +995,7 @@ auth    requisite                       pam_deny.so
 auth    required                        pam_permit.so
 ```
 
-Change it so look like this:
+Change it to look like this:
 
 ```
 auth    [success=2 default=ignore]      pam_unix.so nullok
